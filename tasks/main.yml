@@ -1,0 +1,28 @@
+---
+- name: make a build dir
+  file: state=directory name=/root/nginx-proxy-dockerized
+
+- name: put Dockerfile
+  template: src=Dockerfile dest=/root/nginx-proxy-dockerized/Dockerfile
+
+- name: put nginx.rb
+  template: src=nginx.rb dest=/root/nginx-proxy-dockerized/nginx.rb
+
+- name: make sites-available dir
+  file: state=directory name=/root/nginx-proxy-dockerized/sites-available
+
+- name: put site_config
+  template: src=site_config dest=/root/nginx-proxy-dockerized/sites-available/{{ item.container_name }}
+  with_items: proxied_backend_containers
+
+- name: build a Docker image for nginx
+  command: docker build -t gitinsky/nginx-proxy:0.1.0 --rm /root/nginx-proxy-dockerized
+
+- name: check if a container is started
+  command: bash -c "docker ps | grep nginx-proxy"
+  ignore_errors: True
+  register: result
+
+- name: start a container
+  command: docker run -d -name nginx-proxy {% for backend in proxied_backend_containers %} --link {{ backend.container_name }}:{{ backend.container_name }} {% endfor %} -p=80:80 gitinsky/nginx-proxy:0.1.0
+  when: result|failed
