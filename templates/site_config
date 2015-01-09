@@ -5,7 +5,7 @@ server {
         access_log  /var/log/nginx/{{ item.container_name }}.access.log;
 
         location / {
-                proxy_pass         http://{{ item.container_name }};
+                proxy_pass         http://{{ item.container_name }}:{{ item.port | default(80) }};
                 proxy_redirect     off;
                 proxy_set_header   Host             $host;
                 proxy_set_header   X-Real-IP        $remote_addr;
